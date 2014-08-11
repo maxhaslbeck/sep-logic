@@ -179,4 +179,11 @@ qed
 
 end
 
+class comm_quantale_Sup = quantale_Sup + ab_semigroup_mult
+class comm_quantale_Sup_unital = comm_quantale_Sup + comm_monoid_mult
+class distrib_quantale_Sup = quantale_Sup + complete_distrib_lattice
+class distrib_quantale_Sup_unital = distrib_quantale_Sup + quantale_Sup_unital
+class distrib_comm_quantale_Sup = comm_quantale_Sup + distrib_quantale_Sup
+class distrib_comm_quantale_Sup_unital = comm_quantale_Sup_unital + distrib_quantale_Sup
+
 end

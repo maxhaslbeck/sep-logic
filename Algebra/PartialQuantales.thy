@@ -62,4 +62,7 @@ class comm_quantale_pmult_unital = quantale_pmult_unital + comm_quantale_pmult
 class distrib_quantale_pmult = quantale_pmult + complete_distrib_lattice
 class distrib_comm_quantale_pmult_unital = distrib_quantale_pmult + comm_quantale_pmult_unital
 
+(* For simplicity, we call a commutative quantale unital, a qbi - quantale bunched implications *)
+class qbi = comm_quantale_pmult_unital
+
 end

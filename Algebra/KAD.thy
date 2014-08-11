@@ -1,5 +1,5 @@
 theory KAD
-  imports Quantale_Sup "$AFP/Kleene_Algebra/Kleene_Algebra"
+  imports BBI "$AFP/Kleene_Algebra/Kleene_Algebra"
 begin
 
 no_notation 
@@ -205,7 +205,7 @@ lemma d_absorption1 [simp]: "`d(x)\<cdot>(`d(x) + `d(y)) = `d(x)"
   by (metis antisym_conv bool_mult_right d_add_closed mult_idem subdistl)
 
 lemma d_absorption2 [simp]: "`d(x) + `d(x)\<cdot>`d(y) = `d(x)"
-  by (metis compl_eq_compl_iff_hom compl_inf_add compl_le_compl_iff double_compl inf.cobounded1 inf_hom le_iff_inf)
+  by (metis (hide_lams, no_types) add_comm compl_inf_add compl_le_compl_iff double_compl inf.cobounded1 inf_absorb2 inf_hom)
 
 lemma d_distrib [simp] : "(`d(x) + `d(y))\<cdot>(`d(x) + `d(z)) = `d(x) + `d(y)\<cdot>`d(z)"
   by (metis inf_hom sup_hom sup_inf_distrib1)
