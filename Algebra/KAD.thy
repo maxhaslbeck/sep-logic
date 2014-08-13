@@ -97,7 +97,6 @@ locale domain_semiring = embedded_boolean_semiring bbi_hom
   for bbi_hom :: "'a :: bbi \<Rightarrow> 'b :: dioid_one_zero" ("`_" [999] 1000) + 
   fixes domain :: "'b :: dioid_one_zero \<Rightarrow> 'a :: bbi" ("d _" [999] 1000)
   assumes llp: "d x \<le> p \<longleftrightarrow> x \<le> `p\<cdot>x"
-  and d_order_preserving: "d x \<le> d y \<Longrightarrow> x \<le> y" (* Need this to prove lemma loc *)
 begin
 
 abbreviation compl_bbi :: "'a \<Rightarrow> 'b" ("!_" [999] 1000) where "!p \<equiv> `(-p)"
@@ -169,7 +168,8 @@ proof (subst llp)
 qed
 
 lemma loc: "d(x\<cdot>y) = d(x\<cdot>`(d y))"
-  by (metis d_identity d_order_preserving eq_iff)
+  nitpick oops (*
+  by (metis d_identity d_order_preserving eq_iff) *)
 
 lemma d_compl [iff]: "- d `p = d !p"
   by (metis d_identity)
@@ -266,8 +266,8 @@ lemma fdia_sup: "|x\<rangle> (p \<squnion> q) = |x\<rangle>p \<squnion> |x\<rang
 lemma fdia_add: "|x + y\<rangle> p = |x\<rangle>p \<squnion> |y\<rangle>p"
   by (metis d_add distrib_right' fdiamond_def)
 
-lemma fdia_mult: "|x\<cdot>y\<rangle> p = |x\<rangle> |y\<rangle> p"
-  by (metis fdiamond_def loc mult_assoc)
+lemma fdia_mult: "|x\<cdot>y\<rangle> p \<le> |x\<rangle> |y\<rangle> p"
+  by (metis fdiamond_def subloc mult_assoc) 
 
 lemma fdia_one: "|1\<rangle>p = p"
   by (metis d_identity fdiamond_def monoid_mult_class.mult.left_neutral)
@@ -279,13 +279,16 @@ lemma fdia_bool: "|(`p)\<rangle>q = p \<sqinter> q"
   by (metis d_identity fdiamond_def inf_hom)
 
 lemma fdemodalisation1: "q \<sqinter> |x\<rangle>p = \<bottom> \<longleftrightarrow> `q\<cdot>x\<cdot>`p = 0"
-  by (metis d_very_strict fdia_bool fdia_mult fdiamond_def)
+  oops (*
+  by (metis d_very_strict fdia_bool fdia_mult fdiamond_def) *)
 
 lemma fdemodalisation2: "|x\<rangle>p \<le> q \<longleftrightarrow> !q\<cdot>x\<cdot>`p = 0"
-  by (metis d_very_strict fdia_mult fdiamond_def gla loc zero_unique)
+  oops (*
+  by (metis d_very_strict fdia_mult fdiamond_def gla loc zero_unique) *)
 
 lemma fdemodalisation3: "|x\<rangle>p \<le> q \<longleftrightarrow> x\<cdot>`p \<le> `q\<cdot>x"
-  by (metis d_iso d_mult_le d_order_preserving fdiamond_def imp_exp_law inf.bounded_iff)
+  oops (*
+  by (metis d_iso d_mult_le d_order_preserving fdiamond_def imp_exp_law inf.bounded_iff) *)
 
 lemma fdia_iso: "p \<le> q \<Longrightarrow> |x\<rangle>p \<le> |x\<rangle>q"
   by (metis fdia_sup le_iff_sup)
@@ -309,10 +312,12 @@ lemma dia_diff_var: "|x\<rangle>p \<le> |x\<rangle>(p \<sqinter> -q) \<squnion> 
   by (metis add_compl_one fdia_iso fdia_sup inf.bounded_iff order_hom sup.cobounded2 sup_commute sup_hom sup_inf_distrib1)
 
 lemma fdia_export_1:  "q \<sqinter> |x\<rangle>p = |(`q\<cdot>x)\<rangle>p"
-  by (metis fdia_bool fdia_mult)
+  oops (*
+  by (metis fdia_bool fdia_mult) *)
 
 lemma fdia_export_2: "-q \<sqinter> |x\<rangle>p = |!q\<cdot>x\<rangle>p"
-  by (metis fdia_export_1)
+  oops (*
+  by (metis fdia_export_1) *)
 
 lemma fdia_split: "|x\<rangle>p = (q \<sqinter> |x\<rangle>p) \<squnion> (-q \<sqinter> |x\<rangle>p)"
   by (metis compl_sup_top inf_sup_distrib2 inf_top.left_neutral sup_commute)
@@ -350,8 +355,8 @@ lemma fbox_add1: "|x](p \<sqinter> q) = |x]p \<sqinter> |x]q"
 lemma fbox_add2: "|x + y]p = |x]p \<sqinter> |y]p"
   by (metis compl_sup fbox_fdia fdia_add)
 
-lemma fbox_mult: "|x\<cdot>y]p = |x]|y]p"
-  by (metis double_compl fbox_fdia fdia_mult)
+lemma fbox_mult: "|x]|y]p \<le> |x\<cdot>y]p"
+  by (metis compl_le_compl_iff fbox_fdia fdia_fbox_de_morgan_2 fdia_mult)
 
 lemma fbox_one: "|1]p = p"
   by (metis double_compl fbox_fdia fdia_one)
