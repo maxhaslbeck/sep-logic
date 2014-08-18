@@ -91,6 +91,9 @@ lemma bool_semiring4: "`p\<cdot>x = `p\<cdot>x\<cdot>`q \<Longrightarrow> `p\<cd
 lemma bool_semiring_eq: "`p\<cdot>x \<le> x\<cdot>`q \<longleftrightarrow> x\<cdot>!q \<le> !p\<cdot>x"
   by (metis bool_semiring1 bool_semiring2 bool_semiring3 bool_semiring4)
 
+lemma bool_semiring_eq2: "`p\<cdot>x\<cdot>!q = 0 \<longleftrightarrow> x\<cdot>!q \<le> !p\<cdot>x"
+  by (metis bool_semiring_eq bool_semiring2 bool_semiring3 bool_semiring4 bool_semiring_eq zero_unique)
+
 end
 
 locale domain_semiring = embedded_boolean_semiring bbi_hom 
@@ -168,8 +171,7 @@ proof (subst llp)
 qed
 
 lemma loc: "d(x\<cdot>y) = d(x\<cdot>`(d y))"
-  nitpick oops (*
-  by (metis d_identity d_order_preserving eq_iff) *)
+  (* nitpick *) oops
 
 lemma d_compl [iff]: "- d `p = d !p"
   by (metis d_identity)
@@ -279,16 +281,13 @@ lemma fdia_bool: "|(`p)\<rangle>q = p \<sqinter> q"
   by (metis d_identity fdiamond_def inf_hom)
 
 lemma fdemodalisation1: "q \<sqinter> |x\<rangle>p = \<bottom> \<longleftrightarrow> `q\<cdot>x\<cdot>`p = 0"
-  oops (*
-  by (metis d_very_strict fdia_bool fdia_mult fdiamond_def) *)
+  by (simp add: fdiamond_def imp_exp_law[symmetric] mult_assoc d_very_strict)
 
 lemma fdemodalisation2: "|x\<rangle>p \<le> q \<longleftrightarrow> !q\<cdot>x\<cdot>`p = 0"
-  oops (*
-  by (metis d_very_strict fdia_mult fdiamond_def gla loc zero_unique) *)
+  by (simp add: fdiamond_def gla mult_assoc)
 
 lemma fdemodalisation3: "|x\<rangle>p \<le> q \<longleftrightarrow> x\<cdot>`p \<le> `q\<cdot>x"
-  oops (*
-  by (metis d_iso d_mult_le d_order_preserving fdiamond_def imp_exp_law inf.bounded_iff) *)
+  by (metis fdemodalisation2 bool_semiring_eq2 double_compl)
 
 lemma fdia_iso: "p \<le> q \<Longrightarrow> |x\<rangle>p \<le> |x\<rangle>q"
   by (metis fdia_sup le_iff_sup)
@@ -312,12 +311,10 @@ lemma dia_diff_var: "|x\<rangle>p \<le> |x\<rangle>(p \<sqinter> -q) \<squnion> 
   by (metis add_compl_one fdia_iso fdia_sup inf.bounded_iff order_hom sup.cobounded2 sup_commute sup_hom sup_inf_distrib1)
 
 lemma fdia_export_1:  "q \<sqinter> |x\<rangle>p = |(`q\<cdot>x)\<rangle>p"
-  oops (*
-  by (metis fdia_bool fdia_mult) *)
+  by (metis mult_assoc fdiamond_def imp_exp_law)
 
 lemma fdia_export_2: "-q \<sqinter> |x\<rangle>p = |!q\<cdot>x\<rangle>p"
-  oops (*
-  by (metis fdia_export_1) *)
+  by (metis fdia_export_1)
 
 lemma fdia_split: "|x\<rangle>p = (q \<sqinter> |x\<rangle>p) \<squnion> (-q \<sqinter> |x\<rangle>p)"
   by (metis compl_sup_top inf_sup_distrib2 inf_top.left_neutral sup_commute)
@@ -365,13 +362,13 @@ lemma fbox_one_1: "|x]\<top> = \<top>"
   by (metis compl_bot_eq compl_top_eq fbox_fdia fdia_zero)
 
 lemma fbox_export_1: "-p \<squnion> |x]q = |(`p\<cdot>x)]q"
-  by (metis compl_inf fbox_fdia fdia_bool fdia_mult)
+  by (metis compl_inf fbox_fdia fdia_export_1)
 
 lemma fbox_export_2: "p \<squnion> |x]q = |!p\<cdot>x]q"
-  by (metis compl_sup double_compl fbox_fdia fdia_bool fdia_mult)
+  by (metis double_compl fbox_export_1)
 
 lemma fbox_test: "|(`p)]q = -p \<squnion> q"
-  by (metis fbox_export_1 fbox_mult fbox_one)
+  by (metis compl_inf double_compl fbox_fdia fdia_bool)
 
 lemma fbox_test_var: "-p \<sqinter> |!p](-q) = -p \<sqinter> -q"
   by (metis (hide_lams, no_types) compl_sup double_compl fbox_fdia fdia_bool inf_top.right_neutral sup_compl_top sup_inf_distrib1)
@@ -394,11 +391,11 @@ lemma fbox_subdist_2: "|x]p \<le> |x](p \<squnion> q)"
 lemma fbox_subdist: "|x]p \<squnion> |x]q \<le> |x](p \<squnion> q)"
   by (metis fbox_subdist_2 sup.bounded_iff sup_commute)
 
-
 lemma fbox_diff_var: "|x](p \<squnion> -q) \<sqinter> |x]q \<le> |x]p"
   by (metis (hide_lams, no_types) fbox_add1 inf.bounded_iff inf_commute inf_compl_bot inf_sup_distrib2 order_refl sup_bot.left_neutral sup_commute)
 
 lemma fbox_diff: "|x](p \<squnion> -q) \<le> |x]p \<squnion> -|x]q"
+  apply (simp add: fbox_def antidomain_def)
   oops
 
 end
@@ -414,28 +411,44 @@ lemma a_star: "a(x\<^sup>\<star>) = \<bottom>"
 lemma d_star: "d(x\<^sup>\<star>) = \<top>"
   by (metis a_star a_zero bot_hom double_a)
 
-lemma fdia_star_unfold: "|1\<rangle>p \<squnion> |x\<rangle>|x\<^sup>\<star>\<rangle>p = |x\<^sup>\<star>\<rangle>p"
-  by (metis fdia_add fdia_mult star_unfoldl_eq)
+lemma fdia_star_unfold: "|1\<rangle>p \<squnion> |x\<rangle>|x\<^sup>\<star>\<rangle>p \<ge> |x\<^sup>\<star>\<rangle>p"
+proof -
+  have "|x\<^sup>\<star>\<rangle>p = |1 + x\<cdot>x\<^sup>\<star>\<rangle>p"
+    by (metis star_unfoldl_eq)
+  also have "... = |1\<rangle>p \<squnion> |x\<cdot>x\<^sup>\<star>\<rangle>p"
+    by (metis fdia_add)
+  also have "... \<le> |1\<rangle>p \<squnion> |x\<rangle>|x\<^sup>\<star>\<rangle>p"
+    by (metis add_iso_var fdia_mult inf.orderI inf_idem order_hom sup_hom)
+  finally show ?thesis .
+qed
 
-lemma fbox_star_unfold: "|1]p \<sqinter> |x]|x\<^sup>\<star>]p = |x\<^sup>\<star>]p"
-  by (metis fbox_add2 fbox_mult star_unfoldl_eq)
+lemma fbox_star_unfold: "|1]p \<sqinter> |x]|x\<^sup>\<star>]p \<le> |x\<^sup>\<star>]p"
+  by (metis compl_le_swap1 double_compl fbox_fdia fbox_one fbox_test fdia_star_unfold fdiamond_def inf_hom mult_onel)
 
-lemma fdia_star_unfold_var: "p \<squnion> |x\<rangle>|x\<^sup>\<star>\<rangle>p = |x\<^sup>\<star>\<rangle>p"
+lemma fdia_star_unfold_var: "p \<squnion> |x\<rangle>|x\<^sup>\<star>\<rangle>p \<ge> |x\<^sup>\<star>\<rangle>p"
   by (metis fdia_one fdia_star_unfold)
 
-lemma fbox_star_unfold_var: "p \<sqinter> |x]|x\<^sup>\<star>]p = |x\<^sup>\<star>]p"
+lemma fbox_star_unfold_var: "p \<sqinter> |x]|x\<^sup>\<star>]p \<le> |x\<^sup>\<star>]p"
   by (metis fbox_one fbox_star_unfold)
 
-lemma fdia_star_unfoldr: "|1\<rangle>p \<squnion> |x\<^sup>\<star>\<rangle>|x\<rangle>p = |x\<^sup>\<star>\<rangle>p"
-  by (metis fdia_add fdia_mult star_unfoldr_eq)
+lemma fdia_star_unfoldr: "|1\<rangle>p \<squnion> |x\<^sup>\<star>\<rangle>|x\<rangle>p \<ge> |x\<^sup>\<star>\<rangle>p"
+proof -
+  have "|x\<^sup>\<star>\<rangle>p = |1 + x\<^sup>\<star>\<cdot>x\<rangle>p"
+    by (metis star_unfoldr_eq)
+  also have "... = |1\<rangle>p \<squnion> |x\<^sup>\<star>\<cdot>x\<rangle>p"
+    by (metis fdia_add)
+  also have "... \<le> |1\<rangle>p \<squnion> |x\<^sup>\<star>\<rangle>|x\<rangle>p"
+    by (metis add_iso_var fdia_mult inf.orderI inf_idem order_hom sup_hom)
+  finally show ?thesis .
+qed
 
-lemma fbox_star_unfoldr: "|1]p \<sqinter> |x\<^sup>\<star>]|x]p = |x\<^sup>\<star>]p"
-  by (metis fbox_add2 fbox_mult star_unfoldr_eq)
+lemma fbox_star_unfoldr: "|1]p \<sqinter> |x\<^sup>\<star>]|x]p \<le> |x\<^sup>\<star>]p"
+  by (metis compl_le_swap1 double_compl fbox_fdia fbox_one fbox_test fdia_star_unfoldr fdiamond_def inf_hom mult_onel)
 
-lemma fdia_star_unfoldr_var: "p \<squnion> |x\<^sup>\<star>\<rangle>|x\<rangle>p = |x\<^sup>\<star>\<rangle>p"
+lemma fdia_star_unfoldr_var: "p \<squnion> |x\<^sup>\<star>\<rangle>|x\<rangle>p \<ge> |x\<^sup>\<star>\<rangle>p"
   by (metis fdia_one fdia_star_unfoldr)
 
-lemma fbox_star_unfoldr_var: "p \<sqinter> |x\<^sup>\<star>]|x]p = |x\<^sup>\<star>]p"
+lemma fbox_star_unfoldr_var: "p \<sqinter> |x\<^sup>\<star>]|x]p \<le> |x\<^sup>\<star>]p"
   by (metis fbox_one fbox_star_unfoldr)
 
 lemma fdia_star_induct_var: "|x\<rangle>p \<le> p \<Longrightarrow> |x\<^sup>\<star>\<rangle>p \<le> p"
@@ -449,13 +462,13 @@ lemma fdia_star_induct: "q \<squnion> |x\<rangle>p \<le> p \<Longrightarrow> |x\
 
 lemma fbox_star_induct: "p \<le> q \<sqinter> |x]p \<Longrightarrow>  p \<le> |x\<^sup>\<star>]q"
 proof -
-  assume a1: "p \<le> q \<sqinter> | x ] p"
-  have "\<And>u v y. (u\<Colon>'a) \<le> v \<and> u \<le> y \<longrightarrow> u \<squnion> v \<sqinter> y = v \<sqinter> y"
-    by (metis inf.bounded_iff inf_sup_aci(5) sup.order_iff)
-  hence "\<And>u w. u \<sqinter> | w ] u = u"
-    by (metis d_one d_order_preserving fbox_antitone_var fbox_one inf_top.left_neutral sup.order_iff sup_inf_absorb)
+  assume "p \<le> q \<sqinter> | x ] p"
+  hence f1: "p \<sqinter> (q \<sqinter> | x ] p) = p"
+    by (metis inf_absorb2 inf_commute)
+  hence "p \<le> | x ] p"
+    by (metis inf.cobounded2 inf_assoc)
   thus "p \<le> | x\<^sup>\<star> ] q"
-    using a1 by (metis inf.bounded_iff)
+    using f1 by (metis fbox_add1 fbox_star_induct_var inf.boundedE)
 qed
 
 lemma fdia_star_induct_eq: "q \<squnion> |x\<rangle>p = p \<Longrightarrow> |x\<^sup>\<star>\<rangle>q \<le> p"
