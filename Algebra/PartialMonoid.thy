@@ -80,8 +80,8 @@ text {*
 *}
 
 class partial_ab_semigroup = pmult + pmult_defined +
-  assumes pmult_def: "(x * y) ## z \<and> x ## y \<Longrightarrow> x ## (y * z) \<and> y ## z"
-  and pmult_assoc: "\<lbrakk>x ## (y * z); x ## y\<rbrakk> \<Longrightarrow> (x * y) * z = x * (y * z)"
+  assumes pmult_ab_def: "(x * y) ## z \<and> x ## y \<Longrightarrow> x ## (y * z) \<and> y ## z"
+  and pmult_ab_assoc: "\<lbrakk>x ## (y * z); x ## y\<rbrakk> \<Longrightarrow> (x * y) * z = x * (y * z)"
   and pmult_comm_def: "x ## y \<Longrightarrow> y ## x"
   and pmult_comm: "x ## y \<Longrightarrow> x * y = y * x"
 begin
@@ -90,10 +90,10 @@ lemma "x ## y = y ## x"
   by (metis pmult_comm_def)
 
 lemma pmult_def_eq: "(x * y) ## z \<and> x ## y \<longleftrightarrow> x ## (y * z) \<and> y ## z"
-  by (metis pmult_comm_def pmult_def)
+  by (metis pmult_comm_def pmult_ab_def)
 
 subclass partial_semigroup 
-  by default (metis pmult_def_eq, metis pmult_assoc)
+  by default (metis pmult_def_eq, metis pmult_ab_assoc)
 
 end
 
@@ -201,5 +201,5 @@ text {*
 *}
 (*type_synonym heap = "(nat, nat) pfun"*)
 
-
+notation one_class.one ("1")
 end

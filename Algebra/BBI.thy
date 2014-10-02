@@ -60,7 +60,7 @@ lemma sep_impl: "x * y \<le> z \<longleftrightarrow> x \<le> y -* z"
   apply (fold endo_lower_adjoint_def)
   apply (subst endo_lower_is_jp)
   apply (simp add: endo_join_preserving_def)
-  apply (metis Sup.Join_distl)
+  apply (metis Sup.SUP_def local.Sup.Join_distl)
   apply (unfold endo_galois_connection_def)
   apply (subgoal_tac "\<forall>b a. (a \<le> x b) = (a \<le> ya b)")
   prefer 2

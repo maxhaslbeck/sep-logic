@@ -92,8 +92,8 @@ text {* The order in the semilattice is inversed *}
 instantiation ctran :: (bbi) bounded_semilattice_sup_bot
 begin
 lift_definition bot_ctran :: "'a ctran" is \<top> ..
-lift_definition less_eq_ctran:: "'a ctran \<Rightarrow> 'a ctran \<Rightarrow> bool" is "op \<ge>" ..
-lift_definition less_ctran :: "'a ctran \<Rightarrow> 'a ctran \<Rightarrow> bool" is "op >" ..
+lift_definition less_eq_ctran:: "'a ctran \<Rightarrow> 'a ctran \<Rightarrow> bool" is "op \<ge>" .
+lift_definition less_ctran :: "'a ctran \<Rightarrow> 'a ctran \<Rightarrow> bool" is "op >" .
 lift_definition sup_ctran :: "'a ctran \<Rightarrow> 'a ctran \<Rightarrow> 'a ctran" is inf ..
 instance
   by default (transfer, auto)+
@@ -149,23 +149,25 @@ instance ctran :: (bbi) pre_quantale_Sup
   apply default
   apply transfer
   apply (rule le_funI)
-  apply (simp add: comp_conjunctive_def INF_def)
-  apply (rule Inf_greatest)
-  apply (rule Inf_lower)
+  apply (simp add: comp_conjunctive_def)
+  apply (unfold INF_def)
+  apply (erule_tac x="((\<lambda>f. f xa) ` Y)" in allE) 
   apply simp
-  apply (subst image_iff)
+  apply (rule INF_greatest)
+  apply (rule Inf_lower)
   by auto
-
 
 instance ctran :: (bbi) quantale_Sup 
   apply default
   apply transfer
   apply (rule le_funI)
-  apply (simp add: comp_conjunctive_def INF_def)
-  apply (rule Inf_greatest)
-  apply (rule Inf_lower)
+  apply (simp add: comp_conjunctive_def)
+  apply (unfold INF_def)
+  apply (erule_tac x="((\<lambda>f. f xa) ` Y)" in allE) 
   apply simp
-  apply (subst image_iff)
+  apply (rule Inf_greatest)
+  apply (unfold INF_def)
+  apply (rule Inf_lower)
   by auto
 
 instance ctran :: (bbi) quantale_Sup_unital ..

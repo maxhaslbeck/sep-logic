@@ -33,10 +33,10 @@ text {* The lifting of * is not isotonic closed  *}
 lemma mono_inf_clos [intro]: "\<lbrakk>mono F; mono G\<rbrakk> \<Longrightarrow> mono (F * G)"
   (* nitpick[show_all] *) oops   
 
-lemma mono_Sup_clos [intro]: "\<forall>f \<in> F. mono f \<Longrightarrow> mono (\<Squnion> F)"
+lemma mono_Sup_clos [intro]: "\<forall>(f :: 'a :: complete_lattice \<Rightarrow> 'a) \<in> F. mono f \<Longrightarrow> mono (\<Squnion> F)"
   by (auto simp: order_class.mono_def, rule SUP_mono) auto
 
-lemma mono_Inf_clos [intro]: "\<forall>f \<in> F. mono f \<Longrightarrow> mono (\<Sqinter> F)"
+lemma mono_Inf_clos [intro]: "\<forall>(f :: 'a :: complete_lattice \<Rightarrow> 'a) \<in> F. mono f \<Longrightarrow> mono (\<Sqinter> F)"
   by (auto simp: order_class.mono_def, rule INF_mono) auto
 
 text {* Type of monotonic predicate transformers *}
@@ -62,8 +62,8 @@ lift_definition bot_mtran :: "'a mtran" is \<bottom>  ..
 lift_definition sup_mtran :: "'a mtran \<Rightarrow> 'a mtran \<Rightarrow> 'a mtran" is sup ..
 lift_definition top_mtran :: "'a mtran" is \<top>  ..
 lift_definition inf_mtran :: "'a mtran \<Rightarrow> 'a mtran \<Rightarrow> 'a mtran" is inf ..
-lift_definition less_eq_mtran:: "'a mtran \<Rightarrow> 'a mtran \<Rightarrow> bool" is "op \<le>" ..
-lift_definition less_mtran :: "'a mtran \<Rightarrow> 'a mtran \<Rightarrow> bool" is "op <" ..
+lift_definition less_eq_mtran:: "'a mtran \<Rightarrow> 'a mtran \<Rightarrow> bool" is "op \<le>" . 
+lift_definition less_mtran :: "'a mtran \<Rightarrow> 'a mtran \<Rightarrow> bool" is "op <" .
 instance
   by default (transfer, auto)+
 end
@@ -85,13 +85,13 @@ text {* It forms a pre quantale on respect to function aplication, but not a ful
 instance mtran :: (bbi) near_quantale_Sup_unital 
   by default (transfer, auto)
 
-lemma mono_qSup_subdistl: "mono f \<Longrightarrow> \<Squnion>((\<lambda>g. f o g) ` G) \<le> f \<circ> \<Squnion>G"
+lemma mono_qSup_subdistl: "mono (f :: 'a :: complete_lattice \<Rightarrow> 'a) \<Longrightarrow> \<Squnion>((\<lambda>g. f o g) ` G) \<le> f \<circ> \<Squnion>G"
   by (rule Sup_least) (auto intro!: le_funI order_class.monoD[of "\<lambda>x. f x"] SUP_upper)
 
 instance mtran :: (bbi) pre_quantale_Sup
-  by default (transfer, simp add: mono_qSup_subdistl)
+  by default (transfer, simp only: mono_qSup_subdistl)
 
 instance mtran :: (bbi) quantale_Sup_unital
-  apply default (* nitpick *) oops
+  (* nitpick, it needs to be strict monotone *) oops
 
 end

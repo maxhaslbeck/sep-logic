@@ -488,7 +488,7 @@ lemma fbox_frame: "p \<le> |x]q \<Longrightarrow> p * r \<le> |x](q * r)"
 
 end
 
-locale local_kad = kad + local_domain_semiring
+context kad
 begin
 
 definition ht :: "'a \<Rightarrow> 'b \<Rightarrow> 'a \<Rightarrow> bool" ("\<turnstile> _ _ _" [55,0,55] 50) where "\<turnstile> p x q \<longleftrightarrow> p \<le> |x]q"
@@ -510,6 +510,11 @@ lemma hl_choice: "\<turnstile> p x q \<Longrightarrow> \<turnstile> p y q \<Long
 
 lemma hl_iteration: "\<turnstile> p x p \<Longrightarrow> \<turnstile> p x\<^sup>\<star> p"
   by (metis fbox_star_induct_var ht_def)
+
+end
+
+locale local_kad = kad + local_domain_semiring
+begin
 
 lemma sl_frame: "\<turnstile> p x q \<Longrightarrow> \<turnstile> (p * r) x (q * r)"
   by (metis fbox_frame ht_def)

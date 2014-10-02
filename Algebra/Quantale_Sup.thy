@@ -72,7 +72,7 @@ sublocale near_quantale_Sup \<subseteq> Sup!: near_quantale Sup "op \<cdot>"
     and "abs_complete_lattice.meet Sup = op \<sqinter>"
     and "abs_complete_lattice.top Sup = \<top>"
     and "abs_complete_lattice.bot Sup = \<bottom>"
-  by (unfold_locales, auto) (metis qSup_distr)
+  by (unfold_locales, auto) (metis qSup_distr Sup_image_eq)
 
 sublocale near_quantale_Sup_unital \<subseteq> Sup!: near_quantale_unital Sup "op \<cdot>" one
   where "abs_complete_lattice.join Sup = op +"
@@ -94,7 +94,7 @@ sublocale pre_quantale_Sup \<subseteq> Sup!: pre_quantale Sup "op \<cdot>"
     and "abs_complete_lattice.bot Sup = \<bottom>"
   apply unfold_locales
   apply (auto intro: Sup_eqI Sup_least)
-  by (metis qSup_subdistl le_iff_sup)  
+  by (metis Sup.Sup_image_eq local.Sup.less_eq_def local.qSup_subdistl)
 
 sublocale quantale_Sup \<subseteq> Sup!: quantale Sup "op \<cdot>"
   where "abs_complete_lattice.join Sup = op +"
@@ -106,7 +106,7 @@ sublocale quantale_Sup \<subseteq> Sup!: quantale Sup "op \<cdot>"
     and "abs_complete_lattice.bot Sup = \<bottom>"
   apply unfold_locales
   apply (auto intro: Sup_eqI Sup_least)
-  by (metis qSup_supdistl le_iff_sup sup_commute)
+  by (metis qSup_supdistl le_iff_sup sup_commute Sup.Sup_image_eq)
 
 sublocale quantale_Sup_unital \<subseteq> Sup!: quantale_unital Sup "op \<cdot>" one
   where "abs_complete_lattice.join Sup = op +"
@@ -121,14 +121,14 @@ sublocale quantale_Sup_unital \<subseteq> Sup!: quantale_unital Sup "op \<cdot>"
 context near_quantale_Sup begin
 
 lemma qSUP_distr: "(SUP y:Y. f y) \<cdot> x = (SUP y: Y. f y \<cdot> x)"
-  by (auto simp: SUP_def qSup_distr image_image)  
+  by (unfold SUP_def qSup_distr image_image) simp
 
 end
 
 context quantale_Sup begin
 
 lemma qSUP_distl: "x \<cdot> (SUP y:Y. f y) = (SUP y: Y. x \<cdot> f y)"
-  by (auto simp: SUP_def Sup.Join_distl image_image)
+  by (unfold SUP_def Sup.Join_distl image_image) simp
 
 lemma qSUP_merge_ineq: "\<Squnion> {f x \<cdot> g y | x y. P x \<and> Q y} \<le> \<Squnion> {\<Squnion> {f x \<cdot> g y | x. P x} | y. Q y}"
 proof (rule Sup_least, auto)

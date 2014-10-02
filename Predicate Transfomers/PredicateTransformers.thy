@@ -5,7 +5,7 @@ begin
 no_notation plus (infixl "+" 65)
 
 text{* 
-  State transformers are functions from predicates to predicates, abstractly, from 
+  Predicate transformers are functions from predicates to predicates, abstractly, from 
   commutative quantale unital to commutative quantale unital
 *}
 
@@ -35,15 +35,15 @@ lemma qSup_distr_fun: "(\<Squnion>G * f) x = (\<Squnion>((\<lambda>g. g * f) ` G
   by (auto intro!: SUP_least Sup_mono) (metis SUP_upper)
 
 lemma Sup_distl_assoc: "(f :: 'a \<Rightarrow> 'b) y * \<Squnion>{g y' * h z' |y' z' :: 'a. z = y' * z'} = \<Squnion>{f y * (g y' * h z') |y' z'. z = y' * z'}"
-  by (auto simp add: Sup.Join_distl intro: Sup.Join_eqI2)
+  by (auto simp only: Sup.Join_distl intro!: Sup.Join_eqI2)
 
 lemma qSup_distr_assoc: "\<Squnion>{((f :: 'a \<Rightarrow> 'b) y * g y') | y y' :: 'a. z = (y * y')} * h z' = \<Squnion>{(f y * g y') * h z' | y y'. z = (y * y')}"
-  by (auto simp add: qSup_distr intro: Sup.Join_eqI2)
+  by (auto simp only: qSup_distr intro: Sup.Join_eqI2)
 
 lemma qmult_assoc_fun: "(f * (g * h)) x = ((f * g) * h) x"
 proof -
   have "(f * (g * h)) x = \<Squnion> {\<Squnion> {(f y * g y') * h z' | y' z'. z = y' * z'} | y z. x = y * z}"
-    by (simp add: Sup_distl_assoc mult_assoc)
+    by (simp add: Sup_distl_assoc mult.assoc)
   also have "... = \<Squnion> {(f y * g y') * h z' | y' z' y z. z = y' * z' \<and> x = y * z}"
     apply (rule antisym, rule Sup_least, safe, rule Sup_mono, auto, rule Sup_least, auto)
     apply (subgoal_tac "\<exists>ya z. y * (y' * z') = ya * z \<and> f y * g y' * h z' \<le> \<Squnion>{f ya * g y' * h z' |y' z'. z = y' * z'}")
@@ -52,7 +52,7 @@ proof -
   also have "... = \<Squnion> {(f y * g y') * h z' | z' y y'. x = y * (y' * z')}"
     by (auto intro: Sup.Join_eqI2)
   also have "... = \<Squnion> {(f y * g y') * h z' | z' y y'. x = (y * y') * z'}"
-    by (metis mult_assoc)
+    by (metis mult.assoc)
   also have "... = \<Squnion> {(f y * g y') * h z' | z' y y' z. z = (y * y') \<and> x = z * z'}"
     by (auto intro: Sup.Join_eqI2)
   also have "... = \<Squnion>{ \<Squnion>{(f y * g y') * h z' | y y'. z = (y * y')} | z z'. x = z * z'}"
@@ -67,7 +67,8 @@ qed
 
 instance
   apply default
-  apply (auto intro: qSup_distr_fun antisym qmult_assoc_fun[symmetric])
+  apply (rule ext, rule qmult_assoc_fun[symmetric])
+  apply (rule ext, rule qSup_distr_fun)
   by (metis (lifting, mono_tags) qSup_distl_fun eq_iff le_funI)+
 end
 
@@ -93,12 +94,12 @@ end
 text {* Commutativity is also lifted *}
 
 instance "fun" :: (comm_quantale_Sup, comm_quantale_Sup) comm_quantale_Sup
-proof (default, simp_all add: mult_assoc, rule ext)
+proof (default, simp_all add: mult.assoc, rule ext)
   fix f g :: "'a :: comm_quantale_Sup \<Rightarrow> 'b :: comm_quantale_Sup"
   fix x :: "'a :: comm_quantale_Sup"
   have "(f * g) x = \<Squnion> {f y * g z | y z. x = y * z}" by simp
   also have "... = \<Squnion> {g z * f y | z y. x = z * y}"
-    by (auto intro!: Sup.Join_eqI2 mult_commute)
+    by (auto intro!: Sup.Join_eqI2 mult.commute)
   finally show "(f * g) x = (g * f) x" by simp
 qed
 

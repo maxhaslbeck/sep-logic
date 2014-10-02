@@ -76,7 +76,7 @@ sublocale near_quantale_Inf \<subseteq> Inf!: near_quantale Inf "op \<cdot>"
     and "abs_complete_lattice.top Inf = \<bottom>"
     and "abs_complete_lattice.bot Inf = \<top>"
   apply (unfold_locales, auto)
-  by (metis qInf_distr)
+  by (metis qInf_distr Inf_image_eq)
 
 sublocale near_quantale_Inf_unital \<subseteq> Inf!: near_quantale_unital Inf "op \<cdot>" one 
   where "abs_complete_lattice.join Inf = op \<sqinter>"
@@ -98,7 +98,7 @@ sublocale pre_quantale_Inf \<subseteq> Inf!: pre_quantale Inf "op \<cdot>"
     and "abs_complete_lattice.bot Inf = \<top>"
   apply unfold_locales
   apply (auto intro: Inf_eqI Inf_greatest)
-  by (metis Inf.less_eq_def qInf_subdistl)
+  by (metis Inf.less_eq_def qInf_subdistl Inf_image_eq)
 
 sublocale quantale_Inf \<subseteq> Inf!: quantale Inf "op \<cdot>"
   where "abs_complete_lattice.join Inf = op \<sqinter>"
@@ -110,7 +110,7 @@ sublocale quantale_Inf \<subseteq> Inf!: quantale Inf "op \<cdot>"
     and "abs_complete_lattice.bot Inf = \<top>"
   apply unfold_locales
   apply (auto intro: Inf_eqI Inf_greatest)
-  by (metis inf.orderE qInf_supdistl)
+  by (metis inf.orderE qInf_supdistl Inf_image_eq)
 
 sublocale quantale_Inf_unital \<subseteq> Sup!: quantale_unital Inf "op \<cdot>" one
   where "abs_complete_lattice.join Inf = op \<sqinter>"

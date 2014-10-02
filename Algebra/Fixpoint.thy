@@ -481,7 +481,7 @@ proof -
     apply (rule_tac x = "iter f (n + m) bot" in exI)
     apply auto
     apply (metis iter_plus scott_continuity scott_continuity_mono)
-    by (metis (full_types) iter_plus nat_add_commute scott_continuity scott_continuity_mono)
+    by (metis add.commute iter_plus scott_continuity scott_continuity_mono)
 
   have "f ?c \<le> ?c"
   proof -
@@ -693,7 +693,7 @@ lemma lower_adjoint_Sup:
   apply (erule exE)
   apply (simp add: galois_ump2 mono_def)
   apply (erule conjE)+
-  by (metis order_trans)
+  by (metis (mono_tags, hide_lams) SUP_le_iff SUP_upper eq_iff order.trans order_refl)
 
 lemma lower_preserves_join: "lower_adjoint f \<Longrightarrow> join_preserving f"
   by (metis join_preserving_def lower_adjoint_Sup)
@@ -776,7 +776,17 @@ lemma endo_lower_adjoint_Sup: "Sup X = x \<Longrightarrow> endo_lower_adjoint f 
   apply (erule exE)
   apply (simp add: endo_galois_ump2 isotone_def)
   apply (erule conjE)+
-  by (metis order_trans)
+proof -
+  fix g :: "'a \<Rightarrow> 'a"
+  assume a1: "\<forall>z. (x \<le> z) = (\<forall>y\<in>X. y \<le> z)"
+  assume a2: "\<forall>x y. x \<le> y \<longrightarrow> f x \<le> f y"
+  assume a3: "\<forall>y. f (g y) \<le> y"
+  assume a4: "\<forall>x y. f x \<le> y \<longrightarrow> x \<le> g y"
+  have f5: "\<forall>x\<^sub>0 x\<^sub>1 x. (\<not> SUPREMUM x\<^sub>0 x\<^sub>1 \<le> (x\<Colon>'a) \<or> (\<forall>b_x. (b_x\<Colon>'a) \<notin> x\<^sub>0 \<or> x\<^sub>1 b_x \<le> x)) \<and> ((\<exists>e_x. e_x \<in> x\<^sub>0 \<and> \<not> x\<^sub>1 e_x \<le> x) \<or> SUPREMUM x\<^sub>0 x\<^sub>1 \<le> x)" by (metis (no_types) local.SUP_le_iff)
+  obtain sk\<^sub>0 :: "'a \<Rightarrow> 'a" where "x \<le> g (SUPREMUM X f)" using a1 a4 by (simp add: local.SUP_upper)
+  hence "f x \<le> SUPREMUM X f" using a2 a3 local.order_trans by blast
+  thus "(SUP x:X. f x) = f x" using a1 a2 f5 by (metis (no_types) local.eq_iff)
+qed
 
 lemma endo_lower_preserves_join: "endo_lower_adjoint f \<Longrightarrow> endo_join_preserving f"
   by (metis endo_join_preserving_def endo_lower_adjoint_Sup)
@@ -844,7 +854,17 @@ lemma endo_upper_adjoint_Inf: "Inf X = x \<Longrightarrow> endo_upper_adjoint f 
   apply (erule exE)
   apply (simp add: endo_galois_ump2 isotone_def)
   apply (erule conjE)+
-  by (metis order_trans)
+proof -
+  fix fa :: "'a \<Rightarrow> 'a"
+  assume a1: "\<forall>z. (z \<le> x) = (\<forall>y\<in>X. z \<le> y)"
+  assume a2: "\<forall>x y. x \<le> y \<longrightarrow> fa x \<le> fa y"
+  assume a3: "\<forall>y. fa (f y) \<le> y"
+  assume a4: "\<forall>x y. fa x \<le> y \<longrightarrow> x \<le> f y"
+  have f5: "\<forall>x\<^sub>0 x\<^sub>1 x. (\<not> (x\<^sub>0\<Colon>'a) \<le> INFIMUM x\<^sub>1 x \<or> (\<forall>b_x. (b_x\<Colon>'a) \<notin> x\<^sub>1 \<or> x\<^sub>0 \<le> x b_x)) \<and> ((\<exists>e_x. e_x \<in> x\<^sub>1 \<and> \<not> x\<^sub>0 \<le> x e_x) \<or> x\<^sub>0 \<le> INFIMUM x\<^sub>1 x)" by (metis (no_types) local.le_INF_iff)
+  have "\<forall>x\<^sub>2\<^sub>6 x\<^sub>2\<^sub>7. \<not> x\<^sub>2\<^sub>6 \<le> fa (f x\<^sub>2\<^sub>7) \<or> x\<^sub>2\<^sub>6 \<le> x\<^sub>2\<^sub>7" using a3 local.order_trans by blast
+  then obtain sk\<^sub>0 :: "'a \<Rightarrow> 'a" where "fa (INFIMUM X f) \<le> x" using a1 a2 by (metis local.INF_lower)
+  thus "(INF x:X. f x) = f x" using a1 a3 a4 f5 by (metis local.eq_iff)
+qed
 
 lemma endo_upper_preserves_meet: "endo_upper_adjoint f \<Longrightarrow> endo_meet_preserving f"
   by (metis endo_meet_preserving_def endo_upper_adjoint_Inf)
