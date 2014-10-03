@@ -51,11 +51,7 @@ definition sep_impl :: "'a \<Rightarrow> 'a \<Rightarrow> 'a" (infix "-*" 55) wh
 lemma equality_by_ineq: "\<forall>x. x \<le> f \<longleftrightarrow> x \<le> g \<Longrightarrow> f = g"
   by (metis Sup.ineq order_refl)
 
-lemma sep_impl: "x * y \<le> z \<longleftrightarrow> x \<le> y -* z"
-  apply (simp add: sep_impl_def)
-  apply (rule the1I2 [of "endo_galois_connection (op * y)"])
-  prefer 2
-  apply (metis endo_galois_connection_def mult_commute) 
+lemma ex_sep_conj_conn: "\<exists>!x. endo_galois_connection (op * y) x"
   apply auto
   apply (fold endo_lower_adjoint_def)
   apply (subst endo_lower_is_jp)
@@ -69,6 +65,12 @@ lemma sep_impl: "x * y \<le> z \<longleftrightarrow> x \<le> y -* z"
   apply (erule_tac x=xa in allE) back back
   apply (rule equality_by_ineq)
   by simp
+
+lemma sep_impl: "x * y \<le> z \<longleftrightarrow> x \<le> y -* z"
+  apply (simp add: sep_impl_def)
+  apply (rule the1I2 [of "endo_galois_connection (op * y)"])
+  apply (metis ex_sep_conj_conn)
+  by (metis endo_galois_connection_def mult_commute) 
 
 lemma sep_implI1: "x * y \<le> z \<Longrightarrow> x \<le> y -* z"
   by (simp add: sep_impl)

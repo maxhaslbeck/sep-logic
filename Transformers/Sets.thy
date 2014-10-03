@@ -1,5 +1,5 @@
 theory Sets
-  imports "../Algebra/PartialMonoid"
+  imports "../Algebra/PartialQuantales"
 begin
 
 section {* Resource Predicates *}
@@ -43,6 +43,7 @@ end
 
 instance "set" :: (partial_ab_semigroup) comm_quantale_pmult
   apply (default, auto simp: pmult_set_def)
+  apply (metis pmult_ab_assoc pmult_def_eq)
   by (metis pmult_ab_assoc pmult_def_eq pmult_comm pmult_comm_def)+
 
 instance "set" :: (partial_monoid) quantale_pmult_unital ..
