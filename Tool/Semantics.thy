@@ -52,6 +52,9 @@ definition sep_conj :: "'a pred \<Rightarrow> 'a pred \<Rightarrow> 'a pred" (in
 lemma sep_conj_eq: "(P * Q) (s, h) = (\<exists>h1 h2. h = h1++h2 \<and> (ortho h1 h2) \<and> P (s, h1) \<and> Q (s, h2))"
   by (auto simp: sep_conj_def)
 
+lemma sep_conj_eq2: "(P * Q) = (\<lambda>(s, h). (\<exists>h1 h2. h = h1++h2 \<and> (ortho h1 h2) \<and> P (s, h1) \<and> Q (s, h2)))"
+  by (auto simp: sep_conj_def)
+
 abbreviation (input)
   pred_ex :: "('b \<Rightarrow> 'a \<Rightarrow> bool) \<Rightarrow> 'a \<Rightarrow> bool" (binder "EXS " 10) where
   "EXS x. P x \<equiv> \<lambda>s. \<exists>x. P x s"
@@ -83,17 +86,8 @@ interpretation bbi Inf Sup inf less_eq less sup bot top minus uminus sep_conj em
 abbreviation magic_wand :: "'a pred \<Rightarrow> 'a pred \<Rightarrow> 'a pred" (infix "-*" 55) where 
   "P -* Q \<equiv> sep_impl P Q"
 
-lemma magic_wand_eq: "P -* Q = (\<lambda>(s, h). \<forall>h'. h' \<bottom> h \<and> P (s, h') \<longrightarrow> Q(s, h ++ h'))"
-  apply (rule antisym)
-  prefer 2
-  apply (rule sep_implI2)
-  apply (rule le_funI)
-  apply (clarsimp simp: sep_conj_eq)
-  apply (erule_tac x=h1 in allE)
-  apply (subst heap_add_comm)
-  apply simp
-  apply simp
-  sorry
+lemma magic_wand: "(P -* Q) = (\<lambda>(s, h). (\<forall>h'. h' \<bottom> h \<and> P (s, h') \<longrightarrow> Q(s, h ++ h')))"
+  oops
   
 (* Predicates about heaps *)
 definition is_singleton :: "nat \<Rightarrow> nat \<Rightarrow> heap \<Rightarrow> bool" where
@@ -235,10 +229,18 @@ lemma mono_seq: "mono F \<Longrightarrow> mono G \<Longrightarrow> mono (F o G)"
 lemma mono_if: "mono F \<Longrightarrow> mono G \<Longrightarrow> mono (if_comm p F G)"
   by (auto simp: if_comm_def mono_def)
 
+lemma mono_Sup: "\<forall>(f :: 'a :: complete_lattice \<Rightarrow> 'a) \<in> F. mono f  \<Longrightarrow> mono (\<Squnion>F)"
+  by (auto simp: mono_def, rule SUP_mono) auto
+
+lemma mono_qpower: "mono F \<Longrightarrow> mono (PT.Sup.qpower F i)"
+  apply (induct_tac i)
+  apply (unfold mono_def)
+  by simp_all
+
 lemma mono_iteration: "mono F \<Longrightarrow> mono F\<^sup>\<star>"
-  apply (simp add: mono_def)
-  apply clarify
-sorry
+  apply (subst PT.Sup.qstar_def)
+  apply (rule mono_Sup[of "{y. \<exists>i. y = near_quantale_unital.qpower op \<circ> skip F i}"])
+  by (auto intro: mono_qpower)
 
 lemma mono_while: "mono F \<Longrightarrow> mono (while_comm p F)"
   apply (auto simp: while_comm_def intro!: mono_seq mono_iteration)
@@ -271,6 +273,9 @@ lemma local_power: "mono F \<Longrightarrow> local F \<Longrightarrow> local (ne
   apply (induct i)
   by (auto simp: local_skip intro: local_seq)
 
+lemma local_mutation: "local (@e := e')"
+sorry
+
 lemma local_sup: "local f \<Longrightarrow> local g \<Longrightarrow> local (f \<squnion> g)"
 proof (subst local_def, (rule allI)+, simp)
   fix x y assume assms: "local f" "local g"
@@ -282,8 +287,16 @@ proof (subst local_def, (rule allI)+, simp)
   finally show "(f x \<squnion> g x) * y \<le> f (x * y) \<squnion> g (x * y)" .
 qed
 
-lemma local_Sup: "\<forall>f \<in> F. local f \<Longrightarrow> local (\<Squnion>f)"
-  sorry
+lemma local_Sup: "\<forall>f \<in> F. local f \<Longrightarrow> local (\<Squnion>F)"
+  apply (subst local_def)
+  apply (rule allI)+
+  apply simp
+  apply (unfold SUP_def)
+  apply (subst Semantics.Sup.Join_distr)
+  apply simp
+  apply (rule SUP_mono)
+  apply (rule_tac x=xa in bexI)
+  by (auto simp: local_def)
 
 lemma local_iteration: "mono F \<Longrightarrow> local F \<Longrightarrow> local F\<^sup>\<star>"
   apply (simp add: PT.Sup.qstar_def)

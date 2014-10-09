@@ -49,8 +49,13 @@ qed
 lemma hl_assign: "P \<le> Q[` |m| /`x] \<Longrightarrow> \<turnstile> P (`x := ` |m| ) Q"
   by (auto simp: ht_def)
 
-lemma sl_mutation: "P \<le> \<lbrace>`x \<mapsto> -\<rbrace> * (\<lbrace> `x \<mapsto> `m \<rbrace> -* Q) \<Longrightarrow> \<turnstile> P (@`x := `m) Q"
-  sorry
+lemma sl_mutation_local: "\<turnstile> \<lbrace>e \<mapsto> - \<rbrace> @e := e' \<lbrace> e \<mapsto> e' \<rbrace>"
+  by (auto simp: ht_def ex_singleton_def is_singleton_def)
+
+lemma sl_mutation_global: "\<turnstile> (\<lbrace>e \<mapsto> - \<rbrace> * r) @e := e' (\<lbrace> e \<mapsto> e' \<rbrace> * r)"
+  apply (rule sl_frame)
+  apply (rule local_mutation)
+  by (rule sl_mutation_local)
 
 ML {*
 
@@ -61,7 +66,7 @@ val hoare_step_tac =
       @{thm mono_assign},
       @{thm mono_mutation},
       @{thm hl_assign}, 
-      @{thm sl_mutation},
+      @{thm sl_mutation_global},
       @{thm hl_if}, 
       @{thm hl_skip}, 
       @{thm hl_seq},
