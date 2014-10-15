@@ -89,7 +89,7 @@ lemma pred_infD: "(p \<sqinter> q) s \<Longrightarrow> p s \<and> q s"
 lemma listI: "p \<noteq> 0 \<Longrightarrow>  h1 \<bottom> h2 \<Longrightarrow> is_heap_list p [q, r] (s, h1) \<Longrightarrow> list' r ns (s, h2) \<Longrightarrow> list' p (q#ns) (s, h1 ++ h2)"
   by (force simp: sep_conj_eq)
 
-declare sep_conj_eq [simp]
+declare sep_conj_eq [simp] emp_def[simp]
 notation 
   pred_ex (binder "\<exists> " 10)
   and inf (infixl "\<and>" 75)
@@ -109,7 +109,7 @@ proof -
       \<lbrakk>\<exists>A B. (\<lbrace> list `i A \<rbrace> * \<lbrace> list `j B \<rbrace>) \<and> \<lbrace>(rev Ao) = (rev A) @ B \<rbrace>, 
         \<lbrace> list `j (rev Ao) \<rbrace> \<rbrakk>" 
       (is "... \<sqsubseteq> ?p")
-    by refinement (force simp: emp_def)+
+    by refinement force
   also have "?p \<sqsubseteq> 
         `j := 0;
         while `i \<noteq> 0 do
@@ -198,6 +198,40 @@ proof -
         by refinement auto
   finally show ?thesis .
 qed
+
+
+lemma "\<turnstile> \<lbrace>list `i Ao\<rbrace>
+      `j := 0;
+      while `i \<noteq> 0
+      inv \<exists>A B. (\<lbrace> list `i A \<rbrace> * \<lbrace> list `j B \<rbrace>) \<and> \<lbrace>(rev Ao) = (rev A) @ B \<rbrace>
+      do
+        `k := @(`i + 1);
+        @(`i + 1) := `j;
+        `j := `i;
+        `i := `k
+      od
+   \<lbrace> list `j (rev Ao)\<rbrace>" 
+apply hoare
+apply (clarsimp dest!: list_i_null)
+prefer 2
+apply force
+apply clarsimp
+apply (frule list_i_not_null_var, simp)
+apply (clarsimp simp add: is_singleton_def)
+apply (rule_tac x=ys in exI, rule_tac x="y # xa" in exI)
+apply (subgoal_tac "the (([i a \<mapsto> y, Suc (i a) \<mapsto> x] ++ h2a ++ h2) (Suc (i a))) = x")
+apply auto
+prefer 2
+apply (force intro!: heap_div_the heap_divider)
+apply (rule_tac x=h2a in exI, rule_tac x="[i a \<mapsto> y, Suc (i a) \<mapsto> j a] ++ h2" in exI)
+apply (auto simp add: is_singleton_def ortho_def intro!: listI)
+by (metis domIff empty_map_add fun_upd_upd map_add_upd_left)
+
+hide_const i j k
+
+
+lemma "\<turnstile> ( \<lbrace> x [\<mapsto>] [b, j] \<rbrace> * \<lbrace> list i as \<rbrace> ) @x := a ( \<lbrace> x [\<mapsto>] [a, j] \<rbrace> * \<lbrace> list i as \<rbrace> )"
+  by (simp only: is_heap_list.simps(2) curry_conv split_eta) hoare
 
 
 end

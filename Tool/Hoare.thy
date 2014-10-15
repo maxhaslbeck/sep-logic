@@ -49,8 +49,14 @@ qed
 lemma hl_assign: "P \<le> Q[` |m| /`x] \<Longrightarrow> \<turnstile> P (`x := ` |m| ) Q"
   by (auto simp: ht_def)
 
+lemma sl_assign: "(\<And>s h. P (s, h) \<Longrightarrow> Q (s, h(p \<mapsto> q))) \<Longrightarrow> \<turnstile> P (@p := q) Q"
+  by (auto simp: ht_def)
+
 lemma sl_mutation_local: "\<turnstile> \<lbrace>e \<mapsto> - \<rbrace> @e := e' \<lbrace> e \<mapsto> e' \<rbrace>"
   by (auto simp: ht_def ex_singleton_def is_singleton_def)
+
+lemma sl_mutation_local': "\<turnstile> \<lbrace>e \<mapsto> e'' \<rbrace> @e := e' \<lbrace> e \<mapsto> e' \<rbrace>"
+  by (auto simp: ht_def is_singleton_def)
 
 lemma sl_mutation_global: "\<turnstile> (\<lbrace>e \<mapsto> - \<rbrace> * r) @e := e' (\<lbrace> e \<mapsto> e' \<rbrace> * r)"
   apply (rule sl_frame)
@@ -60,17 +66,21 @@ lemma sl_mutation_global: "\<turnstile> (\<lbrace>e \<mapsto> - \<rbrace> * r) @
 ML {*
 
 val hoare_step_tac = 
-  resolve_tac [
-      @{thm order_refl},
-      @{thm mono_seq},
-      @{thm mono_assign},
-      @{thm mono_mutation},
-      @{thm hl_assign}, 
-      @{thm sl_mutation_global},
-      @{thm hl_if}, 
-      @{thm hl_skip}, 
-      @{thm hl_seq},
-      @{thm hl_while}
+  FIRST' [
+      rtac @{thm sl_frame},
+      rtac @{thm local_mutation},
+      rtac @{thm sl_mutation_local'},
+      rtac @{thm order_refl},
+      rtac @{thm mono_seq},
+      rtac @{thm mono_assign},
+      rtac @{thm mono_mutation},
+      rtac @{thm hl_assign}, 
+      rtac @{thm sl_assign},
+      rtac @{thm sl_mutation_global},
+      rtac @{thm hl_if}, 
+      rtac @{thm hl_skip}, 
+      rtac @{thm hl_seq},
+      rtac @{thm hl_while}
     ] 
 
 val hoare_tac = REPEAT_ALL_NEW (CHANGED o hoare_step_tac)
@@ -79,7 +89,8 @@ val hoare_tac = REPEAT_ALL_NEW (CHANGED o hoare_step_tac)
 
 method_setup hoare_simp = {*
   Scan.succeed (fn ctxt => SIMPLE_METHOD (
-    ALLGOALS hoare_tac 
+    ALLGOALS (asm_full_simp_tac ctxt)
+    THEN ALLGOALS hoare_tac 
     THEN ALLGOALS (asm_full_simp_tac ctxt)
   ))
 *}

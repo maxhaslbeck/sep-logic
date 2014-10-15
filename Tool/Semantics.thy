@@ -118,6 +118,7 @@ interpretation PT: pre_quantale_Sup Inf Sup inf less_eq less sup bot "top :: 'a 
 interpretation PT: quantale_Sup_unital id "op o" Inf Sup inf less_eq less sup bot top
   (* nitpick *) oops
 
+interpretation PT: complete_distrib_lattice Inf Sup inf less_eq less sup bot "top :: 'a predT" ..
 
 section {* Lifting between types *}
 
