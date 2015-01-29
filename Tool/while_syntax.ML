@@ -36,9 +36,17 @@ fun assign_tr [x, t] = Syntax.const "lift_state_a_predT" $
   quote_tr' [(Syntax.const "_antiquote_s" $ update_name_tr [x, absdummy dummyT t])]
   | assign_tr ts = raise TERM ("assign_tr", ts)
 
+fun cons_tr [x, t] = Syntax.const "lift_stateT_predT" $
+  (Syntax.const "new_comm" $ (update_name_tr [x]) $ t)
+  | cons_tr ts = raise TERM ("cons_tr", ts)
+
 fun mutation_tr [x, t] = Syntax.const "lift_state_heap_predT" $
   quote_tr' [Syntax.const @{syntax_const "_antiquote_h"} $ (Syntax.const "heap_update" $ x $ t)]
   | mutation_tr ts = raise TERM ("mutation_tr", ts)
+
+fun dispose_tr [x] = Syntax.const "lift_state_heap_predT" $
+  quote_tr' [Syntax.const @{syntax_const "_antiquote_h"} $ (Syntax.const "dispose_comm" $ x)]
+  | dispose_tr ts = raise TERM ("dispose_tr", ts)
 
 fun mutation_tr' [x, t] = (Syntax.const "heap_update" $ x $ t)
   | mutation_tr' ts = raise TERM ("mutation_tr", ts)

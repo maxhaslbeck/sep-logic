@@ -24,6 +24,12 @@ syntax
 translations
   "list x xs" == "|(`(CONST curry (CONST list' x xs)))|"
 
+lemma list_cong: "list' x xs (a, h) \<Longrightarrow> x' = x \<Longrightarrow> xs' = xs \<Longrightarrow> h' = h \<Longrightarrow> list' x' xs' (a, h')"
+  by force
+
+lemma list_cong_ex: "list' x xs (a, h) \<Longrightarrow> x' = x \<Longrightarrow> h' = h \<Longrightarrow> \<exists>xs. list' x' xs (a, h')"
+  by force
+
 lemma empty_list: "list' i a (s, h) \<Longrightarrow> i = 0 \<Longrightarrow> a = []"
   by (metis (mono_tags, lifting) PairE inf1E list'.simps(2) list.exhaust old.prod.case)
 
@@ -67,6 +73,15 @@ lemma heap_div: "h1 \<bottom> h2 \<Longrightarrow> h1 a = Some b \<Longrightarro
 lemma heap_div_var: "h1 \<bottom> h2 \<Longrightarrow> h2 a = Some b \<Longrightarrow> (h1 ++ h2) a = Some b"
   by (auto simp: ortho_def)
 
+lemma heap_ortho_div2: "[x \<mapsto> y, z \<mapsto> w] \<bottom> h \<Longrightarrow> [x \<mapsto> y] \<bottom> [z \<mapsto> w] \<Longrightarrow>([x \<mapsto> y, z \<mapsto> w] ++ h)(x := None, z := None) = h"
+apply (simp add: fun_upd_def ortho_def map_add_def)
+apply (rule ext)
+apply (case_tac "xa = z")
+apply auto
+apply force
+apply force
+by (metis option.exhaust option.simps(4) option.simps(5))
+ 
 lemma heap_div_the: "h1 \<bottom> h2 \<Longrightarrow> h1 a = Some b \<Longrightarrow> the ((h1 ++ h2) a) = b"
   apply (auto simp: ortho_def)
   by (auto simp: map_add_def split: option.splits)
@@ -229,6 +244,31 @@ by (metis domIff empty_map_add fun_upd_upd map_add_upd_left)
 
 hide_const i j k
 
+record list_dealloc_state =
+  x :: nat
+  y :: nat
+
+lemma [simp]: "list' n as (x_update m s, h) = list' n as (s, h)"
+  by (auto intro: list_s_preserving)
+
+lemma [simp]: "list' n as (y_update m s, h) = list' n as (s, h)"
+  by (auto intro: list_s_preserving)
+
+lemma list_dealloc: " \<turnstile> \<lbrace> list `x xs \<rbrace>
+  while `x \<noteq> 0
+  inv \<lbrace> \<exists>xs. list `x xs \<rbrace>
+  do
+    `y := `x;
+    `x := @(`x + 1);
+    dispose `y;
+    dispose (`y + 1)
+  od
+  ( emp )"
+apply hoare
+apply (auto simp: mono_def dispose_comm_def list_i_null, frule list_i_not_null_var)
+by (auto simp: is_singleton_def, auto intro!: list_cong_ex heap_div_the heap_ortho_div2)
+
+hide_const x y
 
 lemma "\<turnstile> ( \<lbrace> x [\<mapsto>] [b, j] \<rbrace> * \<lbrace> list i as \<rbrace> ) @x := a ( \<lbrace> x [\<mapsto>] [a, j] \<rbrace> * \<lbrace> list i as \<rbrace> )"
   by (simp only: is_heap_list.simps(2) curry_conv split_eta) hoare

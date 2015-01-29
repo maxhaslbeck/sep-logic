@@ -134,6 +134,9 @@ definition lift_state_a_stateT :: "('a state \<Rightarrow> 'a) \<Rightarrow> 'a 
 definition lift_state_heap_stateT :: "('a state \<Rightarrow> heap) \<Rightarrow> 'a stateT" where
   "lift_state_heap_stateT F \<equiv> \<lambda>(s, h). (s, F (s, h))"
 
+definition lift_state_heap_pair :: "('a state \<Rightarrow> 'a) \<Rightarrow> ('a state \<Rightarrow> heap) \<Rightarrow> 'a stateT" where
+  "lift_state_heap_pair F G \<equiv> \<lambda>(s, h). (F (s, h), G(s, h))"
+
 definition lift_stateT_predT :: "'a stateT \<Rightarrow> 'a predT" ("<_>") where
   "<f> \<equiv> \<lambda>Q. Q o f"
 
@@ -171,13 +174,25 @@ definition while_comm :: "'a pred \<Rightarrow> 'a predT \<Rightarrow> 'a predT"
 definition while_inv_comm :: "'a pred \<Rightarrow> 'a pred \<Rightarrow> 'a predT \<Rightarrow> 'a predT" where
   "while_inv_comm p i x = (\<lceil>p\<rceil>;x)\<^sup>\<star>;\<lceil>-p\<rceil>"
 
+definition stable_var :: "(('b \<Rightarrow> 'b) \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> ('a \<Rightarrow> 'b) \<Rightarrow> bool" where
+  "stable_var v_update v \<longleftrightarrow> (\<forall>s n. v (v_update (\<lambda>_. n) s) = n)"
+
+definition new_comm :: "(('b \<Rightarrow> nat) \<Rightarrow> 'a \<Rightarrow> 'a) \<Rightarrow> nat \<Rightarrow> 'a stateT" where
+  "new_comm v a \<equiv> \<lambda>(s, h). let N = (SOME n. \<forall>x \<in> dom h. n > x) in 
+      (v (\<lambda>_. N) s, h(N \<mapsto> a))"
+
+definition dispose_comm :: "nat \<Rightarrow> heap \<Rightarrow> heap" where
+  "dispose_comm e h \<equiv> h (e := None)"
+
 syntax
   "_quote" :: "'b \<Rightarrow> ('a \<Rightarrow> 'b)" ("(\<lbrace>_\<rbrace>)" [0] 1000)       (* Create assertion applying antiquotes *)
   "_antiquote_s" :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a" ("`_" [1000] 1000) (* Apply store *)
   "_antiquote_to_h" :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a" ("@_" [1000] 1000) (* Apply to heap *)
   "_antiquote_h" :: "('a \<Rightarrow> 'b) \<Rightarrow> 'a" ("|_|" [1000] 1000) (* Apply heap *)
   "_assign" :: "idt \<Rightarrow> 'b \<Rightarrow> 'a predT" ("(`_ :=/ _)" [70, 65] 61)
+  "_cons" :: "idt \<Rightarrow> 'b \<Rightarrow> 'a predT" ("(`_ :=/ cons _)" [70, 65] 61)
   "_mutation" :: "'b \<Rightarrow> 'b \<Rightarrow> 'a predT" ("(@_ :=/ _)" [70, 65] 61)
+  "_dispose" :: "nat \<Rightarrow> 'a predT" ("dispose _" [65] 61)
   "_subst" :: "'a pred \<Rightarrow> 'b \<Rightarrow> idt \<Rightarrow> 'a pred" ("_[_'/`_]" [1000] 999)
   "_if" :: "'a pred \<Rightarrow> 'a predT \<Rightarrow> 'a predT \<Rightarrow> 'a predT" ("(0if _//then _//else _//fi)" [0,0,0] 61)
   "_if_skip" :: "'a pred \<Rightarrow> 'a predT \<Rightarrow> 'a predT" ("(0if _//then _//fi)" [0,0] 61)
@@ -190,7 +205,9 @@ parse_translation {*
   [(@{syntax_const "_quote"}, K quote_tr'),
     (@{syntax_const "_subst"}, K subst_tr),
     (@{syntax_const "_assign"}, K assign_tr),
+    (@{syntax_const "_cons"}, K cons_tr),
     (@{syntax_const "_mutation"}, K mutation_tr),
+    (@{syntax_const "_dispose"}, K dispose_tr),
     (@{syntax_const "_if"}, K if_tr), 
     (@{syntax_const "_while"}, K while_tr), 
     (@{syntax_const "_while_inv"}, K while_inv_tr)]
@@ -224,6 +241,9 @@ lemma mono_assign: "mono ( `x := ` |m| )"
 lemma mono_mutation: "mono ( @`x := `m )"
   by (auto simp: mono_def)
 
+lemma mono_dispose: "mono ( dispose e )"
+  by (auto simp: mono_def)
+
 lemma mono_seq: "mono F \<Longrightarrow> mono G \<Longrightarrow> mono (F o G)"
   by (auto simp: mono_def)
 
@@ -252,6 +272,9 @@ section {* Locality *}
 definition local :: "'a predT \<Rightarrow> bool" where
   "local F \<equiv> \<forall>x y. F x * y \<le> F (x * y)"
 
+lemma local_stateT_predT: "local <F>"
+  sorry
+
 text {* All the constructs are local *}
 
 lemma local_skip: "local skip"
@@ -275,7 +298,13 @@ lemma local_power: "mono F \<Longrightarrow> local F \<Longrightarrow> local (ne
   by (auto simp: local_skip intro: local_seq)
 
 lemma local_mutation: "local (@e := e')"
-sorry
+  by (metis lift_state_heap_predT_def local_stateT_predT)
+
+lemma local_cons: "local (`v := cons e)"
+  by (metis local_stateT_predT)
+
+lemma local_dispose: "local (dispose e)"
+  by (metis lift_state_heap_predT_def local_stateT_predT)
 
 lemma local_sup: "local f \<Longrightarrow> local g \<Longrightarrow> local (f \<squnion> g)"
 proof (subst local_def, (rule allI)+, simp)
@@ -304,10 +333,5 @@ lemma local_iteration: "mono F \<Longrightarrow> local F \<Longrightarrow> local
   apply (rule local_Sup[of "{y. \<exists>i. y = near_quantale_unital.qpower op \<circ> skip F i}"])
   by (auto intro: local_power)
 
-lemma local_while: "mono F \<Longrightarrow> local (op \<squnion> p) \<Longrightarrow> local F \<Longrightarrow> local (while_comm p F)"
-  apply (simp add: while_comm_def)
-  apply (auto intro!: local_seq local_iteration mono_iteration mono_seq)
-  apply (auto simp: mono_def)
-oops
 
 end

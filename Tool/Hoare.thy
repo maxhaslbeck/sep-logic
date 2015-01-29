@@ -63,6 +63,31 @@ lemma sl_mutation_global: "\<turnstile> (\<lbrace>e \<mapsto> - \<rbrace> * r) @
   apply (rule local_mutation)
   by (rule sl_mutation_local)
 
+lemma sl_mutation_backwards: "\<turnstile> (\<lbrace>e \<mapsto> - \<rbrace> * (\<lbrace> e \<mapsto> e' \<rbrace> -* p)) @e := e' p"
+  apply (rule hl_weaken)
+  prefer 3
+  apply (rule sl_mutation_global)
+  apply (rule mono_mutation)
+  by (rule sep_impl_annil1)
+  
+lemma sl_cons_local: "stable_var v_update v \<Longrightarrow> \<turnstile> emp (`v := cons e) \<lbrace> `v \<mapsto> e \<rbrace>"
+  by (auto simp add: ht_def emp_def new_comm_def is_singleton_def Let_def stable_var_def)
+
+lemma sl_cons_global: "stable_var v_update v \<Longrightarrow> \<turnstile> r (`v := cons e) (\<lbrace> `v \<mapsto> e \<rbrace> * r)"
+  apply (subst mult.left_neutral[symmetric])
+  apply (rule sl_frame)
+  apply (rule local_cons)
+  by (rule sl_cons_local)
+
+lemma sl_dispose_local: "\<turnstile> \<lbrace> e \<mapsto> - \<rbrace> dispose e emp"
+  by (auto simp: emp_def dispose_comm_def ht_def ex_singleton_def is_singleton_def)
+
+lemma sl_dispose_global: "\<turnstile> (\<lbrace>e \<mapsto> -\<rbrace> * r) dispose e r"
+  apply (subst mult.left_neutral[symmetric]) back back back
+  apply (rule sl_frame)
+  apply (rule local_dispose)
+  by (rule sl_dispose_local)
+
 ML {*
 
 val hoare_step_tac = 
@@ -74,6 +99,7 @@ val hoare_step_tac =
       rtac @{thm mono_seq},
       rtac @{thm mono_assign},
       rtac @{thm mono_mutation},
+      rtac @{thm mono_dispose},
       rtac @{thm hl_assign}, 
       rtac @{thm sl_assign},
       rtac @{thm sl_mutation_global},
