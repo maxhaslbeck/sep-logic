@@ -6,14 +6,14 @@ no_notation Fixpoint.pleq (infix "\<sqsubseteq>" 50)
 notation Set.image (infixr "``" 90)
 
 definition spec :: "'a pred \<Rightarrow> 'a pred \<Rightarrow> 'a predT" ("\<lbrakk>_, _\<rbrakk>" [10, 10] 100)  where
-  "\<lbrakk>P, Q\<rbrakk> \<equiv> Sup {F. \<turnstile> P F Q}"
+  "\<lbrakk>P, Q\<rbrakk> \<equiv> Sup {F. \<turnstile> P F Q \<and> mono F}"
 
 lemma specE: "\<turnstile> P \<lbrakk>P, Q\<rbrakk> Q"
   apply (simp add: ht_def spec_def)
   apply (rule SUP_upper)
-  by auto
+  by (auto simp: mono_def)
 
-lemma specI: "\<turnstile> P F Q \<Longrightarrow> F \<le> \<lbrakk>P, Q\<rbrakk>"
+lemma specI: "mono F \<Longrightarrow> \<turnstile> P F Q \<Longrightarrow> F \<le> \<lbrakk>P, Q\<rbrakk>"
   apply (simp add: ht_def spec_def)
   apply (rule Sup_upper)
   by auto
@@ -33,7 +33,7 @@ lemma ref_weaken: "Q' \<le> Q \<Longrightarrow> \<lbrakk>P, Q\<rbrakk> \<sqsubse
   apply (rule Sup_mono)
   apply auto
   apply (rule_tac x=\<top> in exI)
-  by (auto simp: ht_def)
+  by (auto simp: ht_def mono_def)
 
 lemma ref_str_weak: "P \<le> P' \<Longrightarrow> Q' \<le> Q \<Longrightarrow> \<lbrakk>P, Q\<rbrakk> \<sqsubseteq> \<lbrakk>P', Q'\<rbrakk>"
   by (metis dual_order.trans ref_strenthen ref_weaken)
@@ -41,13 +41,13 @@ lemma ref_str_weak: "P \<le> P' \<Longrightarrow> Q' \<le> Q \<Longrightarrow> \
 lemma ref_seq: "\<lbrakk>P, Q\<rbrakk> \<sqsubseteq> \<lbrakk>P, R\<rbrakk>; \<lbrakk>R, Q\<rbrakk>"
   apply (simp add: spec_def)
   apply (rule Sup_upper)
-  by (auto simp: ht_def)
+  by (auto simp: ht_def mono_def)
 
 lemma ref_assign: "P \<le> Q[` |m| /`v] \<Longrightarrow> \<lbrakk>P, Q\<rbrakk> \<sqsubseteq> (`v := ` |m| )"
   apply (drule hl_assign)
   apply (simp add: ht_def spec_def)
   apply (rule Sup_upper)
-  by auto
+  by (auto simp: mono_def)
 
 lemma ref_lassign: "P \<le> P'[` |m|/`v] \<Longrightarrow> \<lbrakk>P, Q\<rbrakk> \<sqsubseteq> (`v := ` |m| ); \<lbrakk>P', Q\<rbrakk>"
   apply (drule ref_assign)
@@ -59,12 +59,39 @@ lemma ref_lassign: "P \<le> P'[` |m|/`v] \<Longrightarrow> \<lbrakk>P, Q\<rbrakk
   apply force
   by (rule ref_seq)
 
+lemma mono_spec: "mono (\<lbrakk>p, q\<rbrakk>)"
+  by (auto simp: spec_def mono_def)
+
+lemma mono_wi: "mono (\<Squnion>{F. p \<sqinter> b \<le> F p \<and> mono (F :: 'a predT)})"
+  apply (subst mono_def)
+  apply simp
+  apply (rule allI)+
+  apply (rule impI)
+  apply (rule SUP_mono)
+  apply (rule_tac x=f in bexI)
+  apply (clarsimp simp: mono_def)
+  apply simp
+done
+
 lemma ref_while_inv: "\<lbrakk>p, p - b\<rbrakk> \<sqsubseteq> while_comm b (\<lbrakk>p \<sqinter> b, p\<rbrakk>)"
   apply (rule specI)
-  apply (simp add: while_comm_def ht_def)
-  apply (rule iteration)
-  apply auto
-by (metis (mono_tags) Sup_upper antisym_conv ht_def inf_commute le_fun_def mem_Collect_eq predicate2D spec_def sup1CI top_greatest)
+  apply (unfold while_comm_def)
+  apply (fold while_inv_comm_def[of b p "\<lbrakk>p \<sqinter> b, p\<rbrakk>"])
+  apply (subst while_inv_comm_def)
+  apply (rule mono_seq)
+  apply (rule mono_iteration)
+  apply (rule mono_seq)
+  apply (rule mono_pred)
+defer
+  apply (rule mono_pred)
+  apply (rule hl_while)
+  apply (auto simp: spec_def)
+  apply (unfold ht_def)
+  defer
+  apply (rule_tac x=skip in exI)
+  apply (clarsimp intro!: mono_skip)
+  apply (rule mono_wi)+
+done
 
 lemma isol: "G \<sqsubseteq> F \<Longrightarrow> mono H \<Longrightarrow> H \<circ> G \<sqsubseteq> H \<circ> F"
   apply (rule le_funI)
@@ -89,10 +116,7 @@ proof -
     apply (unfold while_comm_def)
     apply (rule PT.Sup.qisor)
     using assms
-  proof -
-    have "\<And>x1 x. \<lbrakk>(x1\<Colon>'a \<times> (nat \<Rightarrow> nat option) \<Rightarrow> bool), x\<rbrakk> \<sqsubseteq> \<top>" by (simp add: Sup_upper ht_def spec_def)
-    thus "(\<lceil>\<lambda>(s, h). b s\<rceil> \<circ> \<lbrakk>i \<sqinter> (\<lambda>(s, h). b s), i\<rbrakk>)\<^sup>\<star> \<sqsubseteq> (\<lceil>\<lambda>(s, h). b s\<rceil> \<circ> \<lbrakk>p', i\<rbrakk>)\<^sup>\<star>" by (simp add: inf.absorb_iff2)
-  qed
+    by (smt2 antisym_conv ht_def mono_def order_refl specI top_apply top_greatest)
   show ?thesis
     by (metis (no_types, lifting) b c calculation dual_order.trans)
 qed   
@@ -103,19 +127,32 @@ lemma star_unfoldl: "mono x \<Longrightarrow> id \<squnion> x o x\<^sup>\<star> 
 lemma mono_qSup_subdistl: "mono (f :: 'a :: complete_lattice \<Rightarrow> 'a) \<Longrightarrow> \<Squnion>((\<lambda>g. f o g) `` G) \<le> f \<circ> \<Squnion>G"
   by (rule Sup_least) (auto intro!: le_funI order_class.monoD[of "\<lambda>x. f x"] SUP_upper)
 
-lemma iteration_iso: "F \<le> G \<Longrightarrow> F\<^sup>\<star> \<le> G\<^sup>\<star>"
-  sorry
+lemma pow_iso: "F \<le> G \<Longrightarrow> pow F i \<le> pow G i"
+  apply (induct i)
+  apply auto
+oops
 
-lemma while_iso: "F \<sqsubseteq> G \<Longrightarrow> while_comm b F \<sqsubseteq> while_comm b G"
-proof (simp add: while_comm_def, rule le_funI, simp)
-  fix x assume assm: "G \<le> F"
-  hence "op \<squnion> (- b) \<circ> G \<le> op \<squnion> (- b) \<circ> F"
-    by auto
-  hence "(op \<squnion> (- b) \<circ> G)\<^sup>\<star> \<le> (op \<squnion> (- b) \<circ> F)\<^sup>\<star>"
-    by (auto intro!: iteration_iso)
-  thus "(op \<squnion> (- b) \<circ> G)\<^sup>\<star> (b \<squnion> x) \<le> (op \<squnion> (- b) \<circ> F)\<^sup>\<star> (b \<squnion> x)"
-    by auto
-qed
+lemma iteration_iso: "mono G \<Longrightarrow> F \<le> G \<Longrightarrow> F\<^sup>\<star> \<le> G\<^sup>\<star>"
+  apply (simp add: iteration_def)
+  apply (rule Inf_mono)
+  apply auto
+  apply (rule_tac x="pow F i" in exI)
+  apply (rule conjI)
+  apply force
+  apply (induct_tac i)
+  by (auto simp: mono_def pow_zero pow_suc)
+
+lemma "F \<sqsubseteq> G \<Longrightarrow> F o R \<sqsubseteq> G o R"
+  by auto
+
+lemma while_iso: "mono F \<Longrightarrow> F \<sqsubseteq> G \<Longrightarrow> while_comm b F \<sqsubseteq> while_comm b G"
+  apply (unfold while_comm_def)
+  apply (rule Semantics.PT.Sup.qisor)
+  apply (rule iteration_iso)
+  apply (rule mono_seq)
+  apply (rule mono_pred)
+  apply auto
+  done
 
 lemma spec_ref_trans [trans]: "x \<sqsubseteq> y \<Longrightarrow> y \<sqsubseteq> z \<Longrightarrow> x \<sqsubseteq> z"
   by auto
@@ -132,6 +169,7 @@ ML {*
 
 val refinement_step_tac = 
   FIRST' [
+    rtac @{thm mono_spec},
     rtac @{thm mono_seq},
     rtac @{thm mono_assign},
     rtac @{thm mono_mutation},

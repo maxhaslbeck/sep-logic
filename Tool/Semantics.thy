@@ -162,11 +162,14 @@ abbreviation skip :: "'a predT" ("skip") where "skip \<equiv> id"
 
 notation comp (infixl ";" 60)
 
-abbreviation iteration :: "'a predT \<Rightarrow> 'a predT" ("_\<^sup>\<star>" [1000] 1000) where
-  "F\<^sup>\<star> \<equiv> near_quantale_unital.qstar Sup op \<circ> id F"
+definition pow :: "'a predT \<Rightarrow> nat \<Rightarrow> 'a predT" where
+  "pow F i \<equiv> PT.Sup.qpower F i"
+
+definition iteration :: "'a predT \<Rightarrow> 'a predT" ("_\<^sup>\<star>" [101] 100) where
+  "F\<^sup>\<star> \<equiv> \<Sqinter> {y. \<exists>i. y = pow F i}"
 
 definition if_comm :: "'a pred \<Rightarrow> 'a predT \<Rightarrow> 'a predT \<Rightarrow> 'a predT" where
-  "if_comm p x y = \<lceil>p\<rceil>;x \<squnion> \<lceil>-p\<rceil>;y"
+  "if_comm p x y = (\<lceil>p\<rceil>;x) \<sqinter> (\<lceil>-p\<rceil>;y)"
 
 definition while_comm :: "'a pred \<Rightarrow> 'a predT \<Rightarrow> 'a predT" where
   "while_comm p x = (\<lceil>p\<rceil>;x)\<^sup>\<star>;\<lceil>-p\<rceil>"
@@ -247,8 +250,17 @@ lemma mono_dispose: "mono ( dispose e )"
 lemma mono_seq: "mono F \<Longrightarrow> mono G \<Longrightarrow> mono (F o G)"
   by (auto simp: mono_def)
 
+lemma mono_inf: "mono F \<Longrightarrow> mono G \<Longrightarrow> mono (F \<sqinter> G)"
+  by (auto simp: mono_def le_infI1 le_infI2)
+
+lemma mono_pred : "mono \<lceil>p\<rceil>"
+  by (auto simp: mono_def)
+
 lemma mono_if: "mono F \<Longrightarrow> mono G \<Longrightarrow> mono (if_comm p F G)"
-  by (auto simp: if_comm_def mono_def)
+  by (metis if_comm_def mono_inf mono_seq mono_pred)
+
+lemma mono_Inf: "\<forall>(f :: 'a :: complete_lattice \<Rightarrow> 'a) \<in> F. mono f  \<Longrightarrow> mono (\<Sqinter>F)"
+  by (auto simp: mono_def, rule INF_mono) auto
 
 lemma mono_Sup: "\<forall>(f :: 'a :: complete_lattice \<Rightarrow> 'a) \<in> F. mono f  \<Longrightarrow> mono (\<Squnion>F)"
   by (auto simp: mono_def, rule SUP_mono) auto
@@ -258,10 +270,8 @@ lemma mono_qpower: "mono F \<Longrightarrow> mono (PT.Sup.qpower F i)"
   apply (unfold mono_def)
   by simp_all
 
-lemma mono_iteration: "mono F \<Longrightarrow> mono F\<^sup>\<star>"
-  apply (subst PT.Sup.qstar_def)
-  apply (rule mono_Sup[of "{y. \<exists>i. y = near_quantale_unital.qpower op \<circ> skip F i}"])
-  by (auto intro: mono_qpower)
+lemma mono_iteration: "mono (F :: 'a predT) \<Longrightarrow> mono (F\<^sup>\<star> :: 'a predT)"
+  by (auto simp: iteration_def pow_def intro: mono_qpower mono_Inf)
 
 lemma mono_while: "mono F \<Longrightarrow> mono (while_comm p F)"
   apply (auto simp: while_comm_def intro!: mono_seq mono_iteration)
@@ -273,6 +283,9 @@ definition local :: "'a predT \<Rightarrow> bool" where
   "local F \<equiv> \<forall>x y. F x * y \<le> F (x * y)"
 
 lemma local_stateT_predT: "local <F>"
+  sorry
+
+lemma local_pred : "local \<lceil>p\<rceil>"
   sorry
 
 text {* All the constructs are local *}
@@ -290,8 +303,13 @@ proof (subst local_def, (rule allI)+, (subst comp_apply)+)
   finally show "F (G x) * y \<le> F (G (x * y))" .
 qed
 
+lemma local_inf: "local F \<Longrightarrow> local G \<Longrightarrow> local (F \<sqinter> G)"
+  apply (auto simp: local_def)
+  apply (metis (mono_tags) Semantics.Sup.qisol le_inf_iff mult_commute order_refl predicate1D)+
+done
+
 lemma local_if: "local F \<Longrightarrow> local G \<Longrightarrow> local (if_comm p F G)"
-  by (auto simp: if_comm_def local_def)
+  by (metis if_comm_def mono_pred local_inf local_seq local_pred)
 
 lemma local_power: "mono F \<Longrightarrow> local F \<Longrightarrow> local (near_quantale_unital.qpower op \<circ> skip F i)"
   apply (induct i)
@@ -328,10 +346,32 @@ lemma local_Sup: "\<forall>f \<in> F. local f \<Longrightarrow> local (\<Squnion
   apply (rule_tac x=xa in bexI)
   by (auto simp: local_def)
 
-lemma local_iteration: "mono F \<Longrightarrow> local F \<Longrightarrow> local F\<^sup>\<star>"
-  apply (simp add: PT.Sup.qstar_def)
-  apply (rule local_Sup[of "{y. \<exists>i. y = near_quantale_unital.qpower op \<circ> skip F i}"])
-  by (auto intro: local_power)
+lemma local_Inf: "\<forall>f \<in> F. local f \<Longrightarrow> local (\<Sqinter>F)"
+  apply (subst local_def)
+  apply (rule allI)+
+  apply simp
+  apply (unfold INF_def)
+  apply (rule Inf_greatest)
+  apply (clarsimp simp: local_def)
+  apply (erule_tac x=f in ballE)
+  apply (erule_tac x=x in allE)
+  apply (erule_tac x=y in allE)
+  apply auto
+  by (metis (mono_tags) INF_lower Semantics.Sup.qisol mult_commute predicate1D)
 
+lemma pow_zero: "pow F 0 = skip"
+  by (auto simp: pow_def)
+
+lemma pow_suc: "pow F (Suc i) = F o (pow F i)"
+  by (auto simp: pow_def)
+
+lemma local_qpower: "mono F \<Longrightarrow> local F \<Longrightarrow> local (pow F i)"
+  apply (simp add: local_def)
+  apply (induct i)
+  apply (auto simp: pow_zero pow_suc)
+  by (metis (mono_tags) mono_def predicate1D)
+
+lemma local_iteration: "mono F \<Longrightarrow> local F \<Longrightarrow> local (F\<^sup>\<star> :: 'a predT)"
+  by (auto simp: iteration_def intro: local_Inf local_qpower)
 
 end

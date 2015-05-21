@@ -5,8 +5,11 @@ begin
 definition ht :: "'a pred \<Rightarrow> 'a predT \<Rightarrow> 'a pred \<Rightarrow> bool" ("(3\<turnstile> _/ (2_)/ _)" [100, 55, 100] 50) where
   "\<turnstile> p F q \<longleftrightarrow> p \<le> F q"
 
-lemma hl_seq: "mono F \<Longrightarrow> \<turnstile> r G q \<Longrightarrow> \<turnstile> p F r \<Longrightarrow> \<turnstile> p F; G q"
+lemma hl_seq: "mono F \<Longrightarrow> \<turnstile> p F r \<Longrightarrow> \<turnstile> r G q \<Longrightarrow> \<turnstile> p F; G q"
   by (auto simp: ht_def mono_def)
+
+lemma hl_sup: "mono F \<Longrightarrow> p \<le> (F :: 'a predT) q \<Longrightarrow> p \<le> F r \<Longrightarrow> p \<le> F (q \<squnion> r)"
+  by (metis mono_sup order_trans sup_ge2)
 
 lemma hl_skip: "p \<le> q \<Longrightarrow> \<turnstile> p skip q"
   by (auto simp: ht_def)
@@ -20,22 +23,55 @@ lemma hl_weaken: "mono F \<Longrightarrow> q \<le> q' \<Longrightarrow> \<turnst
 lemma hl_strenthen: "p' \<le> p \<Longrightarrow> \<turnstile> p F q \<Longrightarrow> \<turnstile> p' F q"
   by (auto simp: ht_def)
 
-lemma iteration: "p \<le> F q \<Longrightarrow> p \<le> F\<^sup>\<star> q"
-proof -
-  assume assm: "p \<le> F q"
-  have "F \<le> F\<^sup>\<star>"
-    by (metis PT.Sup.qpower.simps PT.Sup.qstar_refi comp_id)
-  thus ?thesis using assm
-    by force
-qed
+lemma iteration: "p \<le> F q \<Longrightarrow> p \<le> (F\<^sup>\<star>) q"
+  oops
+
+lemma hl_pow: "mono F \<Longrightarrow> p \<le> F p \<Longrightarrow> pow F i p \<le> F (pow F i p)"
+  apply (induct i)
+  apply (auto simp: pow_zero pow_suc)
+  by (metis mono_def predicate1D)
+
+lemma hl_iteration: "mono F \<Longrightarrow> p \<le> F p \<Longrightarrow> p \<le> (F\<^sup>\<star>) p"
+  apply (simp add: iteration_def)
+  apply (rule INF_greatest)
+  apply auto
+  apply (induct_tac i)
+  apply (auto simp: pow_zero pow_suc)
+  by (metis hl_pow predicate1D)
+
+lemma hl_while': "mono x \<Longrightarrow> (i \<sqinter> b) \<le> x i \<Longrightarrow> i \<le> ((\<lceil>b\<rceil> \<circ> x)\<^sup>\<star>) i"
+  apply (rule hl_iteration)
+  apply (auto simp: mono_def)
+done
+
+lemma mono_bx: "mono x \<Longrightarrow> mono ((\<lceil>b\<rceil> \<circ> x)\<^sup>\<star>)"
+  apply (rule mono_iteration)
+  apply (rule mono_seq)
+  apply (rule mono_pred)
+by simp
 
 lemma hl_while: "mono x \<Longrightarrow> p \<le> i \<Longrightarrow> i - b \<le> q \<Longrightarrow> (i \<sqinter> b) \<le> x i \<Longrightarrow> \<turnstile> p (while_inv_comm b i x) q"
-  apply (simp add: ht_def while_inv_comm_def)
-  apply (auto intro!: iteration )
-  apply (rule rev_predicate1D[of "\<lambda>s. x i s"])
-  prefer 2
-  apply (rule monoD[of x])
-  by auto
+  apply (rule hl_weaken)
+  apply (unfold while_inv_comm_def)
+  apply (rule mono_seq)
+  apply (rule mono_iteration)
+  apply (rule mono_seq)
+  apply (rule mono_pred)
+  apply simp
+  apply (rule mono_pred)  
+  apply assumption
+  apply (rule hl_strenthen)
+  apply assumption
+  apply (unfold ht_def while_inv_comm_def)
+  apply (subst comp_apply)
+  apply (rule order_trans)
+  apply (rule hl_while')
+  apply assumption
+  apply assumption
+  apply (rule monoE[of "(\<lceil>b\<rceil> \<circ> x)\<^sup>\<star>" i "\<lceil>- b\<rceil> (i - b)"])
+  apply (rule mono_bx)
+  apply (auto intro: mono_def)
+done
 
 lemma sl_frame: "local F \<Longrightarrow> \<turnstile> p F q \<Longrightarrow> \<turnstile> (p * r) F (q * r)"
 proof (simp add: local_def ht_def)

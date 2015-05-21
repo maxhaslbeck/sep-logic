@@ -158,7 +158,7 @@ proof -
           \<lbrakk>(\<exists> a A B. (\<lbrace>`i [\<mapsto>] [a,`j]\<rbrace> * \<lbrace> list `k A \<rbrace> * \<lbrace> list `j B \<rbrace>) \<and> \<lbrace>(rev Ao) = (rev (a#A)) @ B \<rbrace>) \<and> \<lbrace>`i \<noteq> 0\<rbrace>, 
             \<exists> A B. (\<lbrace> list `i A \<rbrace> * \<lbrace> list `j B \<rbrace>) \<and> \<lbrace>(rev Ao) = (rev A) @ B \<rbrace>\<rbrakk>
         od" (is "... \<sqsubseteq> ?p")
-    by refinement (auto simp: spec_def ht_def)
+        by refinement (force simp: spec_def ht_def mono_def)
   also have "?p \<sqsubseteq> 
         `j := 0;
         while `i \<noteq> 0 do
@@ -227,9 +227,8 @@ lemma "\<turnstile> \<lbrace>list `i Ao\<rbrace>
       od
    \<lbrace> list `j (rev Ao)\<rbrace>" 
 apply hoare
-apply (clarsimp dest!: list_i_null)
-prefer 2
 apply force
+apply (clarsimp dest!: list_i_null)
 apply clarsimp
 apply (frule list_i_not_null_var, simp)
 apply (clarsimp simp add: is_singleton_def)
